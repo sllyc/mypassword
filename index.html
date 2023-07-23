@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MyPassword</title>
+    <style>
+        /* Define the general styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: black;
+            padding: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        /* Define the styling of inputs, buttons, and display area */
+        input, button, #display {
+            margin: 10px;
+            padding: 10px;
+            font-size: 20px;
+        }
+
+        /* Define the styling of display area */
+        #display {
+            border: 1px solid black;
+            width: 300px;
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            background-color: white;
+            color: black;
+        }
+
+        /* Define the styling of + and = icons */
+        .icon {
+            font-size: 30px;
+            margin: 10px;
+            color: #007BFF;  /* Additional color of my choice */
+        }
+
+        /* Define the layout of the buttons */
+        .buttonRow {
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Define the styling for smaller screens (max-width: 600px) */
+        @media (max-width: 600px) {
+            #display, input {
+                width: 200px;
+            }
+            .icon, input, button {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <input type="password" id="token" placeholder="Enter token">
+    <span class="icon">+</span>
+    <input type="text" id="label" placeholder="Enter label">
+    <span class="icon">=</span>
+    <div id="display"> </div>
+    <div class="buttonRow">
+        <button id="copyButton">Copy</button>
+        <button id="clearButton">Clear</button>
+    </div>
+
+    <script>
+        /* Get elements from the DOM */
+        const tokenInput = document.getElementById('token');
+        const labelInput = document.getElementById('label');
+        const displayArea = document.getElementById('display');
+        const copyButton = document.getElementById('copyButton');
+        const clearButton = document.getElementById('clearButton');
+
+        /* Function to create SHA-256 hash of input text */
+        const hashText = async (text) => {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        /* Function to update display with hashed value */
+        const updateDisplay = async () => {
+            const hashedText = await hashText(tokenInput.value + labelInput.value);
+            const result = hashedText.substring(0, 12) + "Aa1-";
+            displayArea.textContent = result.substring(0, 3) + result.substring(3).replace(/./g, '*');
+        };
+
+        /* Event listener for copy button */
+        copyButton.addEventListener('click', async () => {
+            const hashedText = await hashText(tokenInput.value + labelInput.value);
+            navigator.clipboard.writeText(hashedText.substring(0, 12) + "Aa1-");
+            copyButton.textContent = "Copied!";
+            copyButton.style.backgroundColor = "black";
+            copyButton.style.color = "white";
+            setTimeout(() => {
+                copyButton.textContent = "Copy";
+                copyButton.style.backgroundColor = "";
+                copyButton.style.color = "";
+            }, 3000);
+        });
+
+        /* Event listener for clear button */
+        clearButton.addEventListener('click', () => {
+            tokenInput.value = '';
+            labelInput.value = '';
+            updateDisplay();
+        });
+
+        /* Event listeners for inputs to update the display area on change */
+        tokenInput.addEventListener('input', updateDisplay);
+        labelInput.addEventListener('input', updateDisplay);
+
+        /* Initialize the display area */
+        updateDisplay();
+    </script>
+</body>
+</html>
